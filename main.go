@@ -9,12 +9,33 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func drawBlock(screen tcell.Screen, x, y int, color tcell.Color) {
-	style := tcell.StyleDefault.Foreground(color).Background(tcell.ColorBlack)
-	screen.SetContent(x, y, ' ', nil, style)
-	screen.SetContent(x+1, y, ' ', nil, style)
-	screen.SetContent(x, y+1, ' ', nil, style)
-	screen.SetContent(x+1, y+1, ' ', nil, style)
+type Board struct {
+	width  int
+	height int
+	grid   [][]Cell
+}
+type Cell struct {
+	state bool
+}
+
+func (c *Cell) Set(state bool) {
+	c.state = state
+}
+
+func NewBoard(width, height int) *Board {
+	board := Board{
+		height: height,
+		width:  width,
+	}
+	board.grid = InitCells(width, height)
+	return &board
+}
+func InitCells(width, height int) [][]Cell {
+	cells := make([][]Cell, height)
+	for i := 0; i < height; i++ {
+		cells[i] = make([]Cell, width)
+	}
+	return cells
 }
 func InitScreen() tcell.Screen {
 	s, err := tcell.NewScreen()
@@ -30,27 +51,48 @@ func InitScreen() tcell.Screen {
 	s.EnableMouse()
 	return s
 }
+func (b *Board) Random() {
+	grid := make([][]bool, b.height)
+	for i := 0; i < b.height; i++ {
+		grid[i] = make([]bool, b.width)
+	}
+	for i := 0; i < b.height; i++ {
+		for j := 0; j < b.width; j++ {
+			grid[i][j] = rand.Int()%2 == 0
+		}
+	}
+	b.SetCellState(0, 0, grid)
+}
+func (b *Board) SetCellState(x, y int, boardGrid [][]bool) {
+	for i, row := range boardGrid {
+		for j, state := range row {
+			if y+i < b.height && x+j < b.width {
+				b.grid[y+i][x+j].Set(state)
+			}
+		}
+	}
+}
 func main() {
 	s := InitScreen()
 	width, height := s.Size()
 	defer s.Fini()
 	rand.Seed(time.Now().UnixNano())
+	board := NewBoard(width, height)
+	board.Random()
 	for {
-		x := rand.Intn(width)
-		y := rand.Intn(height)
-		color := tcell.Color(rand.Intn(256))
-		drawBlock(s, x, y, color)
+		for i, row := range board.grid {
+			for j, cell := range row {
+				if cell.state {
+					st := tcell.StyleDefault.Background(tcell.ColorWhite)
+					s.SetContent(j*2, i, ' ', nil, st)
+					s.SetContent(j*2+1, i, ' ', nil, st)
+				} else {
+					st := tcell.StyleDefault.Background(tcell.ColorBlack)
+					s.SetContent(j*2, i, ' ', nil, st)
+					s.SetContent(j*2+1, i, ' ', nil, st)
+				}
+			}
+		}
 		s.Show()
-		time.Sleep(100 * time.Millisecond)
-		// ev := s.PollEvent()
-		// switch ev.(type) {
-		// case *tcell.EventKey:
-		// 	keyEvent := ev.(*tcell.EventKey)
-		// 	if keyEvent.Key() == tcell.KeyEnter {
-		// 		return
-		// 	}
-		// default:
-		// 	continue
-		// }
 	}
 }
