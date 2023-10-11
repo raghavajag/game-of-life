@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -30,14 +29,18 @@ func startGame() error {
 	width, height := s.Size()
 	board := NewBoard(width, height)
 	board.Random()
-	game := Game{
+	ticker := time.NewTicker(60 * time.Millisecond)
+	defer ticker.Stop()
+	event := make(chan Event)
+	game := &Game{
 		Screen: s,
 		Board:  board,
+		Ticker: ticker,
+		Event:  event,
 	}
 	return game.Loop()
 }
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	app := cli.NewApp()
 	app.Action = func(c *cli.Context) error {
 		return startGame()
