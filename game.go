@@ -7,6 +7,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+const EventTypePlace = "place"
+
 type Event struct {
 	Type string
 	X    int
@@ -21,6 +23,7 @@ type Game struct {
 	Ticker *time.Ticker
 	Event  chan Event
 	paused bool
+	draw   bool
 }
 
 func (g *Game) display() {
@@ -40,28 +43,18 @@ func (g *Game) display() {
 	}
 }
 func (g *Game) Loop() error {
-	go func() {
-		for {
-			event := g.Screen.PollEvent()
-			switch event.(type) {
-			case *tcell.EventKey:
-				keyEvent := event.(*tcell.EventKey)
-				if keyEvent.Key() == tcell.KeyEnter {
-					g.Event <- Event{Type: "done"}
-					return
-				}
-				if keyEvent.Key() == tcell.KeyCtrlSpace {
-					g.Event <- Event{Type: "pause"}
-				}
-			}
-		}
-	}()
-
 	for {
 		g.display()
 		select {
 		case ev := <-g.Event:
 			switch ev.Type {
+			case "switchState":
+				if (ev.X < g.Board.width) && (ev.Y < g.Board.height) && (ev.X >= 0) && (ev.Y >= 0) {
+					{
+						g.Board.Get(ev.X, ev.Y).Switch()
+					}
+				}
+				g.Screen.Show()
 			case "step":
 				if !g.paused {
 					g.Board.Next()
@@ -71,14 +64,18 @@ func (g *Game) Loop() error {
 				return nil
 			case "pause":
 				g.paused = !g.paused
+			case "draw":
+				g.draw = !g.draw
 			default:
 				return fmt.Errorf(ev.Type)
 			}
 		case <-g.Ticker.C:
-			if !g.stop && !g.paused {
+			if !g.paused && !g.draw {
 				g.Board.Next()
 			}
 			g.Screen.Show()
+		default:
+			continue
 		}
 	}
 }

@@ -48,3 +48,6 @@ func (c *Cell) Flush() {
 	}
 	c.state = c.nextState
 }
+func (c *Cell) Switch() {
+	c.state = !c.state
+}

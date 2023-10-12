@@ -28,7 +28,7 @@ func startGame() error {
 	defer s.Fini()
 	width, height := s.Size()
 	board := NewBoard(width, height)
-	board.Random()
+	// board.Random()
 	ticker := time.NewTicker(60 * time.Millisecond)
 	defer ticker.Stop()
 	event := make(chan Event)
@@ -37,7 +37,10 @@ func startGame() error {
 		Board:  board,
 		Ticker: ticker,
 		Event:  event,
+		draw:   true,
+		paused: true,
 	}
+	go inputLoop(game.Screen, event)
 	return game.Loop()
 }
 func main() {

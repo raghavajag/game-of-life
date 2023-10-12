@@ -89,3 +89,6 @@ func Cells(width, height int) [][]Cell {
 	}
 	return cells
 }
+func (b *Board) Get(x, y int) *Cell {
+	return &b.grid[y][x]
+}
